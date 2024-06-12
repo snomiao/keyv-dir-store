@@ -1,24 +1,34 @@
-
-# KeyvDIR
+# Keyv Directory Store
 
 Store key into a file per value
 
-## Store each value with CSV
+## Usages
 
 ```ts
+// Default: Store each value with JSON in format "{value: ..., expires: ...}"
 new Keyv({
-  store: new KeyvDirStore("cache/kv", { ext: "csv" }),
-  serialize: ({ value }) => csvFormat(value),
-  deserialize: (str) => ({ value: csvParse(str), expires: undefined }),
+  store: new KeyvDirStore(".cache/kv")
 });
-```
 
-## Store each value with YAML
-
-```ts
+// Store each value with CSV
 new Keyv({
-  store: new KeyvDirStore("cache/kv", { ext: "yaml" }),
+  store: new KeyvDirStore(".cache/kv", { ext: ".csv" }),
+  serialize: ({ value }) => d3.csvFormat(value),
+  deserialize: (str) => ({ value: d3.csvParse(str), expires: undefined }),
+});
+
+// Store each value with YAML
+new Keyv({
+  store: new KeyvDirStore(".cache/kv", { ext: ".json" }),
   serialize: ({ value }) => yaml.stringify(value),
   deserialize: (str) => ({ value: yaml.parse(str), expires: undefined }),
 });
+
+// Store each value with JSON
+new Keyv({
+  store: new KeyvDirStore(".cache/kv", { ext: ".json" }),
+  serialize: ({ value }) => JSON.stringify(value, null, 2),
+  deserialize: (str) => ({ value: JSON.parse(str), expires: undefined }),
+});
+
 ```
