@@ -50,7 +50,10 @@ export class KeyvDirStore implements Keyv.Store<string> {
     return name;
   }
   #path(key: string) {
-    return path.join(this.#dir, this.#filename(key) + this.ext);
+    return path.join(
+      this.#dir,
+      sanitizeFilename(this.#filename(key) + this.ext)
+    );
   }
   async get(key: string) {
     // read memory
