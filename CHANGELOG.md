@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.5](https://github.com/snomiao/keyv-dir-store/compare/v0.0.4...v0.0.5) (2024-06-26)
+
+
+### Bug Fixes
+
+* **main:** sanitize ([ae7b162](https://github.com/snomiao/keyv-dir-store/commit/ae7b162cb8835bccda3c81769009ac0a78c7fac0))
+* **main:** stage ([86d9193](https://github.com/snomiao/keyv-dir-store/commit/86d9193f5aa095ac77d006f081a3b0e801c1327e))
+
 ### [0.0.4](https://github.com/snomiao/keyv-dir-store/compare/v0.0.3...v0.0.4) (2024-06-26)
 
 ### [0.0.3](https://github.com/snomiao/keyv-dir-store/compare/v0.0.2...v0.0.3) (2024-06-12)
