@@ -1,6 +1,6 @@
-import { mkdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import type { DeserializedData, default as Keyv } from "keyv";
 import md5 from "md5";
+import { mkdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import path from "path";
 import sanitizeFilename from "sanitize-filename";
 type Value = any;
@@ -22,32 +22,35 @@ export class KeyvDirStore implements Keyv.Store<string> {
   #dir: string;
   #cache: CacheMap<Value>;
   #ready: Promise<unknown>;
-  #path: (key: string) => string;
+  #filename: (key: string) => string;
   ext = ".json";
   constructor(
     dir: string,
     {
       cache = new Map(),
-      path,
+      filename,
       ext,
     }: {
       cache?: CacheMap<Value>;
-      path?: (key: string) => string;
+      filename?: (key: string) => string;
       ext?: string;
     } = {}
   ) {
     this.#ready = mkdir(dir, { recursive: true });
     this.#cache = cache;
     this.#dir = dir;
-    this.#path = path ?? this.#defaultPath;
+    this.#filename = filename ?? this.#defaultFilename;
     this.ext = ext ?? this.ext;
   }
-  #defaultPath(key: string) {
+  #defaultFilename(key: string) {
     // use dir as hash salt to avoid collisions
     const readableName = sanitizeFilename(key).slice(4, 16);
-    const hashName = md5(this.#dir + key).slice(0, 16);
-    const name = readableName + "-" + hashName + this.ext;
-    return path.join(this.#dir, name);
+    const hashName = md5(key + "+SALT-poS1djRa4M2jXsWi").slice(0, 16);
+    const name = `${readableName}-${hashName}`;
+    return name;
+  }
+  #path(key: string) {
+    return path.join(this.#dir, this.#filename(key) + this.ext);
   }
   async get(key: string) {
     // read memory
