@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.7](https://github.com/snomiao/keyv-dir-store/compare/v0.0.6...v0.0.7) (2024-06-27)
+
+
+### Bug Fixes
+
+* **main:** rename memcache ([1b592e9](https://github.com/snomiao/keyv-dir-store/commit/1b592e91c8523dafb4cd12d72e5dd78e6e8e5af4))
+* **readablename:** slice start from 0 ([987f5d9](https://github.com/snomiao/keyv-dir-store/commit/987f5d9a6b220a33f7303fecfe5a06460bdecd04))
+
 ### [0.0.6](https://github.com/snomiao/keyv-dir-store/compare/v0.0.5...v0.0.6) (2024-06-27)
 
 
