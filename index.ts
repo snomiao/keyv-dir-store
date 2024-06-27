@@ -91,7 +91,7 @@ export class KeyvDirStore implements Keyv.Store<string> {
     await this.#ready;
     // console.log({ key, value, expires });
     await writeFile(this.#path(key), value); // create a expired file
-    await utimes(this.#path(key), +new Date(), new Date(expires ?? 0)); // set a future expires time (0 as never expired)
+    await utimes(this.#path(key), new Date(), new Date(expires ?? 0)); // set a future expires time (0 as never expired)
     return true;
   }
   async delete(key: string) {
