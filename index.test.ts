@@ -4,7 +4,8 @@ import { KeyvDirStore } from ".";
 it("KeyvDirStore works", async () => {
   // store test
   const kv = new Keyv<number | string | { obj: boolean }>({
-    store: new KeyvDirStore(".cache/test1"),
+    store: new KeyvDirStore(".cache/test1", { filename: (x) => x }),
+    namespace: "",
     deserialize: KeyvDirStore.deserialize,
     serialize: KeyvDirStore.serialize,
   });
@@ -20,7 +21,8 @@ it("KeyvDirStore works", async () => {
 
   // new instance with no cache Obj, to test file cache
   const kv2 = new Keyv<number | string | { obj: boolean }>({
-    store: new KeyvDirStore(".cache/test1"),
+    store: new KeyvDirStore(".cache/test1", { filename: (x) => x }),
+    namespace: "",
     deserialize: KeyvDirStore.deserialize,
     serialize: KeyvDirStore.serialize,
   });
@@ -32,7 +34,8 @@ it("KeyvDirStore works", async () => {
 it("KeyvDirStore works with only store", async () => {
   // store test
   const kv = new Keyv<number | string | { obj: boolean }>({
-    store: new KeyvDirStore(".cache/test2"),
+    store: new KeyvDirStore(".cache/test2", { filename: (x) => x }),
+    namespace: "",
   });
   await kv.clear();
   await kv.set("a", 1234, -86400e3); // already expired
@@ -46,7 +49,8 @@ it("KeyvDirStore works with only store", async () => {
 
   // new instance with no cache Obj, to test file cache
   const kv2 = new Keyv<number | string | { obj: boolean }>({
-    store: new KeyvDirStore(".cache/test2"),
+    store: new KeyvDirStore(".cache/test2", { filename: (x) => x }),
+    namespace: "",
   });
   expect(await kv2.get("a")).toEqual(undefined); // will delete file before get
   expect(await kv2.get("b")).toEqual(1234);

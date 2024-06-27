@@ -57,17 +57,18 @@ export class KeyvDirStore implements Keyv.Store<string> {
   }
   async get(key: string) {
     // read memory
-    const cached = this.#cache.get(key);
-    if (cached) {
+    const memCached = this.#cache.get(key);
+    if (memCached) {
       // console.log("memory cache hit but expired", key, cached.expires, Date.now());
-      if (cached.expires && cached.expires < Date.now()) {
+      if (memCached.expires && memCached.expires < Date.now()) {
         await this.delete(key);
       } else {
-        return cached.value;
+        return memCached.value;
       }
     }
     // read file cache
-    const stats = await stat(this.#path(key)).catch(() => null);
+    const path = this.#path(key);
+    const stats = await stat(path).catch(() => null);
     if (!stats) return undefined; // stat not found
     const expires = +stats.mtime;
     if (expires !== 0) {
@@ -78,8 +79,7 @@ export class KeyvDirStore implements Keyv.Store<string> {
         return undefined;
       }
     }
-    // return this.#parse(await readFile(this.#path(key), "utf8"));
-    return await readFile(this.#path(key), "utf8").catch(() => undefined);
+    return await readFile(path, "utf8").catch(() => undefined);
   }
   async set(key: string, value: Value, ttl?: number) {
     if (!value) return await this.delete(key);
@@ -90,8 +90,9 @@ export class KeyvDirStore implements Keyv.Store<string> {
     // save to file
     await this.#ready;
     // console.log({ key, value, expires });
+    await mkdir(this.#dir, { recursive: true });
     await writeFile(this.#path(key), value); // create a expired file
-    await utimes(this.#path(key), new Date(), new Date(expires ?? 0)); // set a future expires time (0 as never expired)
+    await utimes(this.#path(key), new Date(), new Date(expires ?? 0)); // set expires time as mtime (0 as never expired)
     return true;
   }
   async delete(key: string) {
@@ -102,7 +103,6 @@ export class KeyvDirStore implements Keyv.Store<string> {
   }
   async clear() {
     await rm(this.#dir, { recursive: true }).catch(() => void 0);
-    await mkdir(this.#dir, { recursive: true });
   }
   async has(key: string) {
     return undefined !== (await this.get(key));
