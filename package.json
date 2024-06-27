@@ -22,7 +22,8 @@
   "dependencies": {
     "@types/node": "^20.14.2",
     "md5": "^2.3.0",
-    "sanitize-filename": "^1.6.3"
+    "sanitize-filename": "^1.6.3",
+    "yaml": "^2.4.5"
   },
   "devDependencies": {
     "@types/bun": "^1.1.3",

@@ -3,7 +3,7 @@ import md5 from "md5";
 import { mkdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import path from "path";
 import sanitizeFilename from "sanitize-filename";
-type Value = any;
+
 type CacheMap<Value> = Map<string, DeserializedData<Value>>;
 /**
  * KeyvDirStore is a Keyv.Store<string> implementation that stores data in files.
@@ -18,7 +18,7 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  * await kv.set("b", 1234); // never expired
  * expect(await kv.get("b")).toEqual(1234);
  */
-export class KeyvDirStore implements Keyv.Store<string> {
+export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   #dir: string;
   #cache: CacheMap<Value>;
   #ready: Promise<unknown>;
@@ -44,7 +44,7 @@ export class KeyvDirStore implements Keyv.Store<string> {
   }
   #defaultFilename(key: string) {
     // use dir as hash salt to avoid collisions
-    const readableName = sanitizeFilename(key).slice(4, 16);
+    const readableName = sanitizeFilename(key).slice(0, 16);
     const hashName = md5(key + "+SALT-poS1djRa4M2jXsWi").slice(0, 16);
     const name = `${readableName}-${hashName}`;
     return name;
@@ -109,10 +109,12 @@ export class KeyvDirStore implements Keyv.Store<string> {
   }
 
   // Save expires into mtime, and value into file
-  static serialize({ value }: DeserializedData<Value>): string {
+  /** @deprecated use KeyvDirStoreJSON */
+  static serialize({ value }: DeserializedData<any>): string {
     return JSON.stringify(value, null, 2);
   }
-  static deserialize(str: string): DeserializedData<Value> {
+  /** @deprecated use KeyvDirStoreJSON */
+  static deserialize(str: string): DeserializedData<any> {
     return { value: JSON.parse(str), expires: undefined };
   }
 }
