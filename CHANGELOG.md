@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.6](https://github.com/snomiao/keyv-dir-store/compare/v0.0.5...v0.0.6) (2024-06-27)
+
+
+### Bug Fixes
+
+* - [`fs.utimes` doesn't support `number` or `string` on Windows · Issue [#33227](https://github.com/snomiao/keyv-dir-store/issues/33227) · nodejs/node]( https://github.com/nodejs/node/issues/33227 ) ([ff4981c](https://github.com/snomiao/keyv-dir-store/commit/ff4981cde2564eb9e49350d97149653d0066f850))
+
 ### [0.0.5](https://github.com/snomiao/keyv-dir-store/compare/v0.0.4...v0.0.5) (2024-06-26)
 
 
