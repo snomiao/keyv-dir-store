@@ -1,6 +1,6 @@
 # Keyv Directory Store
 
-Store key into a file per value
+High performance Filesystem Keyv Store, caches each key-value pair into a $key.json. and more! *.JSON, *.YAML, *.CSV is also avaliable.
 
 ## Usages
 
@@ -10,11 +10,18 @@ new Keyv({
   store: new KeyvDirStore(".cache/kv")
 });
 
-// Store each value with CSV
+// Store each object list with CSV
 new Keyv({
   store: new KeyvDirStore(".cache/kv", { ext: ".csv" }),
   serialize: ({ value }) => d3.csvFormat(value),
   deserialize: (str) => ({ value: d3.csvParse(str), expires: undefined }),
+});
+
+// Store each object list with TSV
+new Keyv({
+  store: new KeyvDirStore(".cache/kv", { ext: ".tsv" }),
+  serialize: ({ value }) => d3.tsvFormat(value),
+  deserialize: (str) => ({ value: d3.tsvParse(str), expires: undefined }),
 });
 
 // Store each value with YAML

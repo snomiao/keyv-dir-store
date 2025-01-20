@@ -7,6 +7,9 @@ import sanitizeFilename from "sanitize-filename";
 type CacheMap<Value> = Map<string, DeserializedData<Value>>;
 /**
  * KeyvDirStore is a Keyv.Store<string> implementation that stores data in files.
+ *
+ * learn more [README](./README.md)
+ *
  * @example
  * const kv = new Keyv<number | string | { obj: boolean }>({
  *   store: new KeyvDirStore("cache/test"),
@@ -17,6 +20,7 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  * expect(await kv.get("a")).toEqual(undefined); // will delete file before get
  * await kv.set("b", 1234); // never expired
  * expect(await kv.get("b")).toEqual(1234);
+ *
  */
 export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   #dir: string;
@@ -25,6 +29,10 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   #filename: (key: string) => string;
   ext = ".json";
   constructor(
+    /** dir to cache store
+     * WARN: dont share this dir with other purpose
+     *       it will be rm -f when keyv.clear() is called
+     */
     dir: string,
     {
       cache = new Map(),
@@ -36,7 +44,7 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
       ext?: string;
     } = {}
   ) {
-    this.#ready = mkdir(dir, { recursive: true });
+    this.#ready = mkdir(dir, { recursive: true }).catch(() => {});
     this.#cache = cache;
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
@@ -90,7 +98,7 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
     // save to file
     await this.#ready;
     // console.log({ key, value, expires });
-    await mkdir(this.#dir, { recursive: true });
+    await mkdir(this.#dir, { recursive: true }).catch(() => {});
     await writeFile(this.#path(key), value); // create a expired file
     await utimes(this.#path(key), new Date(), new Date(expires ?? 0)); // set expires time as mtime (0 as never expired)
     return true;
