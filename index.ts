@@ -115,7 +115,6 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   async has(key: string) {
     return undefined !== (await this.get(key));
   }
-
   // Save expires into mtime, and value into file
   /** @deprecated use KeyvDirStoreJSON */
   static serialize({ value }: DeserializedData<any>): string {
