@@ -4,9 +4,18 @@
   "description": "High performance Filesystem Keyv Store, caches each key-value pair into a $key.json. and more! *.JSON, *.YAML, *.CSV is also avaliable.",
   "keywords": [
     "keyv",
+    "keyv-store",
     "dir"
   ],
-  "license": "ISC",
+  "homepage": "https://github.com/snomiao/keyv-dir-store#readme",
+  "bugs": {
+    "url": "https://github.com/snomiao/keyv-dir-store/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snomiao/keyv-dir-store.git"
+  },
+  "license": "MIT",
   "author": "snomiao <snomiao@gmail.com>",
   "type": "module",
   "exports": {
