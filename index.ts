@@ -46,6 +46,7 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   ) {
     this.#ready = mkdir(dir, { recursive: true }).catch(() => {});
     this.#cache = cache;
+    
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
     this.ext = ext ?? this.ext;
