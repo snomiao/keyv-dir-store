@@ -160,6 +160,17 @@ const keyv = new Keyv({
 4. TTL information is stored in the file's modification time
 5. An in-memory cache is used to improve performance
 
+## See Also
+
+Other Keyv storage adapters by the same author:
+
+- [keyv-github](https://github.com/snomiao/keyv-github) — GitHub repository adapter; each key is a file, commits are writes
+- [keyv-sqlite](https://github.com/snomiao/keyv-sqlite) — SQLite storage adapter
+- [keyv-mongodb-store](https://github.com/snomiao/keyv-mongodb-store) — MongoDB storage adapter
+- [keyv-nedb-store](https://github.com/snomiao/keyv-nedb-store) — NeDB embedded file-based adapter
+- [keyv-cache-proxy](https://github.com/snomiao/keyv-cache-proxy) — transparent caching proxy that wraps any object
+- [keyv-nest](https://github.com/snomiao/keyv-nest) — hierarchical multi-layer caching adapter
+
 ## License
 
 MIT © [snomiao](https://github.com/snomiao)
