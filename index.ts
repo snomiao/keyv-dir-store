@@ -10,7 +10,7 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  *
  * learn more [README](./README.md)
  *
- * @example
+ * @example Basic usage
  * const kv = new Keyv<number | string | { obj: boolean }>({
  *   store: new KeyvDirStore("cache/test"),
  *   deserialize: KeyvDirStore.deserialize,
@@ -21,6 +21,16 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  * await kv.set("b", 1234); // never expired
  * expect(await kv.get("b")).toEqual(1234);
  *
+ * @example Mirror KeyvGithub paths (for use with keyv-nest)
+ * // Use same prefix/suffix as KeyvGithub, with filename: (k) => k for raw paths
+ * const dirStore = new KeyvDirStore("./cache", {
+ *   prefix: "data/",
+ *   suffix: ".json",
+ *   filename: (k) => k,  // use key as-is, no hashing
+ * });
+ * // Now dirStore uses same paths as KeyvGithub:
+ * // key "foo" -> ./cache/data/foo.json (local) and data/foo.json (GitHub)
+ *
  */
 export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   #dir: string;
@@ -28,6 +38,10 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   #ready: Promise<unknown>;
   #filename: (key: string) => string;
   ext = ".json";
+  /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
+  readonly prefix: string;
+  /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. Overrides ext when set. */
+  readonly suffix: string;
   constructor(
     /** dir to cache store
      * WARN: dont share this dir with other purpose
@@ -38,17 +52,25 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
       cache = new Map(),
       filename,
       ext,
+      prefix,
+      suffix,
     }: {
       cache?: CacheMap<Value>;
       filename?: (key: string) => string;
       ext?: string;
-    } = {}
+      /** Path prefix prepended to every key (e.g. 'data/'). Use with filename: (k) => k for raw paths. */
+      prefix?: string;
+      /** Path suffix appended to every key (e.g. '.json'). Overrides ext when set. Use with filename: (k) => k for raw paths. */
+      suffix?: string;
+    } = {},
   ) {
     this.#ready = mkdir(dir, { recursive: true }).catch(() => {});
     this.#cache = cache;
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
     this.ext = ext ?? this.ext;
+    this.prefix = prefix ?? "";
+    this.suffix = suffix ?? "";
   }
   #defaultFilename(key: string) {
     // use dir as hash salt to avoid collisions
@@ -58,10 +80,10 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
     return name;
   }
   #path(key: string) {
-    return path.join(
-      this.#dir,
-      sanitizeFilename(this.#filename(key) + this.ext)
-    );
+    const filename = this.#filename(key);
+    const ext = this.suffix || this.ext;  // suffix overrides ext when set
+    const relativePath = this.prefix + filename + ext;
+    return path.join(this.#dir, relativePath);
   }
   async get(key: string) {
     // read memory
@@ -97,10 +119,11 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
     this.#cache.set(key, { value, expires });
     // save to file
     await this.#ready;
-    // console.log({ key, value, expires });
-    await mkdir(this.#dir, { recursive: true }).catch(() => {});
-    await writeFile(this.#path(key), value); // create a expired file
-    await utimes(this.#path(key), new Date(), new Date(expires ?? 0)); // set expires time as mtime (0 as never expired)
+    const filePath = this.#path(key);
+    // create parent directories for nested paths (e.g. data/sub/key.json)
+    await mkdir(path.dirname(filePath), { recursive: true }).catch(() => {});
+    await writeFile(filePath, value); // create a expired file
+    await utimes(filePath, new Date(), new Date(expires ?? 0)); // set expires time as mtime (0 as never expired)
     return true;
   }
   async delete(key: string) {

@@ -1,6 +1,6 @@
 # Keyv Directory Store
 
-High performance Filesystem Keyv Store, caches each key-value pair into a $key.json. and more! *.JSON, *.YAML, *.CSV is also avaliable.
+High performance Filesystem Keyv Store, caches each key-value pair into a $key.json. and more! _.JSON, _.YAML, \*.CSV is also avaliable.
 
 [![npm version](https://badge.fury.io/js/keyv-dir-store.svg)](https://www.npmjs.com/package/keyv-dir-store)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -38,28 +38,28 @@ bun add keyv keyv-dir-store
 ### Basic Usage
 
 ```ts
-import Keyv from 'keyv';
-import { KeyvDirStore } from 'keyv-dir-store';
+import Keyv from "keyv";
+import { KeyvDirStore } from "keyv-dir-store";
 
 // Default: Store each value with JSON
 const keyv = new Keyv({
-  store: new KeyvDirStore(".cache/kv")
+  store: new KeyvDirStore(".cache/kv"),
 });
 
 // Set a value (never expires)
-await keyv.set('key1', 'value1');
+await keyv.set("key1", "value1");
 
 // Set a value with TTL (expires after 1 day)
-await keyv.set('key2', 'value2', 86400000);
+await keyv.set("key2", "value2", 86400000);
 
 // Get a value
-const value = await keyv.get('key1');
+const value = await keyv.get("key1");
 
 // Check if a key exists
-const exists = await keyv.has('key1');
+const exists = await keyv.has("key1");
 
 // Delete a key
-await keyv.delete('key1');
+await keyv.delete("key1");
 
 // Clear all keys
 await keyv.clear();
@@ -70,35 +70,35 @@ await keyv.clear();
 #### Store with JSON (using provided helper)
 
 ```ts
-import Keyv from 'keyv';
-import { KeyvDirStore } from 'keyv-dir-store';
-import { KeyvDirStoreAsJSON } from 'keyv-dir-store/KeyvDirStoreAsJSON';
+import Keyv from "keyv";
+import { KeyvDirStore } from "keyv-dir-store";
+import { KeyvDirStoreAsJSON } from "keyv-dir-store/KeyvDirStoreAsJSON";
 
 const keyv = new Keyv({
   store: new KeyvDirStore(".cache/kv", { ext: ".json" }),
-  ...KeyvDirStoreAsJSON
+  ...KeyvDirStoreAsJSON,
 });
 ```
 
 #### Store with YAML (using provided helper)
 
 ```ts
-import Keyv from 'keyv';
-import { KeyvDirStore } from 'keyv-dir-store';
-import { KeyvDirStoreAsYaml } from 'keyv-dir-store/KeyvDirStoreAsYaml';
+import Keyv from "keyv";
+import { KeyvDirStore } from "keyv-dir-store";
+import { KeyvDirStoreAsYaml } from "keyv-dir-store/KeyvDirStoreAsYaml";
 
 const keyv = new Keyv({
   store: new KeyvDirStore(".cache/kv", { ext: ".yaml" }),
-  ...KeyvDirStoreAsYaml
+  ...KeyvDirStoreAsYaml,
 });
 ```
 
 #### Store Object Lists with CSV
 
 ```ts
-import Keyv from 'keyv';
-import { KeyvDirStore } from 'keyv-dir-store';
-import * as d3 from 'd3';
+import Keyv from "keyv";
+import { KeyvDirStore } from "keyv-dir-store";
+import * as d3 from "d3";
 
 const keyv = new Keyv({
   store: new KeyvDirStore(".cache/kv", { ext: ".csv" }),
@@ -110,9 +110,9 @@ const keyv = new Keyv({
 #### Store Object Lists with TSV
 
 ```ts
-import Keyv from 'keyv';
-import { KeyvDirStore } from 'keyv-dir-store';
-import * as d3 from 'd3';
+import Keyv from "keyv";
+import { KeyvDirStore } from "keyv-dir-store";
+import * as d3 from "d3";
 
 const keyv = new Keyv({
   store: new KeyvDirStore(".cache/kv", { ext: ".tsv" }),
@@ -134,22 +134,48 @@ Creates a new KeyvDirStore instance.
   - `cache` (Map, optional): Custom cache Map to use
   - `filename` (function, optional): Custom filename generator function
   - `ext` (string, optional): File extension to use (default: `.json`)
+  - `prefix` (string, optional): Path prefix prepended to every key (e.g. `'data/'`)
+  - `suffix` (string, optional): Path suffix appended to every key (overrides `ext` when set)
 
 #### Example with Custom Options
 
 ```ts
-import Keyv from 'keyv';
-import { KeyvDirStore } from 'keyv-dir-store';
+import Keyv from "keyv";
+import { KeyvDirStore } from "keyv-dir-store";
 
 const keyv = new Keyv({
   store: new KeyvDirStore(".cache/kv", {
     // Custom file extension
     ext: ".data",
-    
+
     // Custom filename generator
-    filename: (key) => `custom-prefix-${key}`
-  })
+    filename: (key) => `custom-prefix-${key}`,
+  }),
 });
+```
+
+#### Mirror KeyvGithub paths (for use with keyv-nest)
+
+Use the same prefix/suffix as KeyvGithub with `filename: (k) => k` for raw paths:
+
+```ts
+import KeyvNest from "keyv-nest";
+import { KeyvDirStore } from "keyv-dir-store";
+import KeyvGithub from "keyv-github";
+
+const prefix = "data/";
+const suffix = ".json";
+
+const store = KeyvNest(
+  new KeyvDirStore("./cache", {
+    prefix,
+    suffix,
+    filename: (k) => k,  // use key as-is, no hashing
+  }),
+  new KeyvGithub("owner/repo", { client, prefix, suffix })
+);
+
+// key "foo" -> ./cache/data/foo.json (local) and data/foo.json (GitHub)
 ```
 
 ## How It Works
