@@ -1,4 +1,4 @@
-import type { DeserializedData, default as Keyv } from "keyv";
+import type { DeserializedData, KeyvStoreAdapter } from "keyv";
 import md5 from "md5";
 import { mkdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import path from "path";
@@ -7,6 +7,10 @@ import sanitizeFilename from "sanitize-filename";
 type CacheMap<Value> = Map<string, DeserializedData<Value>>;
 /**
  * KeyvDirStore is a Keyv.Store<string> implementation that stores data in files.
+ *
+ * **Warning**: TTL is stored in file mtime, which may be modified by other programs
+ * (backup tools, sync services, etc.). For reliable TTL, wrap this store with Keyv:
+ * `new Keyv({ store: new KeyvDirStore(...) })` - Keyv stores expiry in the value itself.
  *
  * learn more [README](./README.md)
  *
@@ -32,15 +36,16 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  * // key "foo" -> ./cache/data/foo.json (local) and data/foo.json (GitHub)
  *
  */
-export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
+export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
   #dir: string;
   #cache: CacheMap<Value>;
   #ready: Promise<unknown>;
   #filename: (key: string) => string;
-  ext = ".json";
+  opts: Record<string, unknown> = {};
+  namespace?: string;
   /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
   readonly prefix: string;
-  /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. Overrides ext when set. */
+  /** Path suffix appended to every key (e.g. '.json'). Defaults to '.json'. */
   readonly suffix: string;
   constructor(
     /** dir to cache store
@@ -51,16 +56,14 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
     {
       cache = new Map(),
       filename,
-      ext,
       prefix,
       suffix,
     }: {
       cache?: CacheMap<Value>;
       filename?: (key: string) => string;
-      ext?: string;
       /** Path prefix prepended to every key (e.g. 'data/'). Use with filename: (k) => k for raw paths. */
       prefix?: string;
-      /** Path suffix appended to every key (e.g. '.json'). Overrides ext when set. Use with filename: (k) => k for raw paths. */
+      /** Path suffix appended to every key (e.g. '.json'). Defaults to '.json'. Use with filename: (k) => k for raw paths. */
       suffix?: string;
     } = {},
   ) {
@@ -68,9 +71,8 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
     this.#cache = cache;
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
-    this.ext = ext ?? this.ext;
     this.prefix = prefix ?? "";
-    this.suffix = suffix ?? "";
+    this.suffix = suffix ?? ".json";
   }
   #defaultFilename(key: string) {
     // use dir as hash salt to avoid collisions
@@ -81,13 +83,12 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   }
   #path(key: string) {
     const filename = this.#filename(key);
-    const ext = this.suffix || this.ext;  // suffix overrides ext when set
-    // Sanitize filename+ext for safety; prefix can have slashes for nested paths
-    const safeFilename = sanitizeFilename(filename + ext);
+    // Sanitize filename+suffix for safety; prefix can have slashes for nested paths
+    const safeFilename = sanitizeFilename(filename + this.suffix);
     const relativePath = this.prefix + safeFilename;
     return path.join(this.#dir, relativePath);
   }
-  async get(key: string) {
+  async get<T = Value>(key: string): Promise<T | undefined> {
     // read memory
     const memCached = this.#cache.get(key);
     if (memCached) {
@@ -95,7 +96,7 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
       if (memCached.expires && memCached.expires < Date.now()) {
         await this.delete(key);
       } else {
-        return memCached.value;
+        return memCached.value as T;
       }
     }
     // read file cache
@@ -111,7 +112,7 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
         return undefined;
       }
     }
-    return await readFile(path, "utf8").catch(() => undefined);
+    return await readFile(path, "utf8").catch(() => undefined) as T | undefined;
   }
   async set(key: string, value: Value, ttl?: number) {
     if (!value) return await this.delete(key);
@@ -148,5 +149,9 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   /** @deprecated use KeyvDirStoreJSON */
   static deserialize(str: string): DeserializedData<any> {
     return { value: JSON.parse(str), expires: undefined };
+  }
+  // IEventEmitter implementation (required by KeyvStoreAdapter)
+  on(_event: string, _listener: (...args: any[]) => void): this {
+    return this;
   }
 }

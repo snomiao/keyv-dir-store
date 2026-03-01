@@ -75,7 +75,7 @@ import { KeyvDirStore } from "keyv-dir-store";
 import { KeyvDirStoreAsJSON } from "keyv-dir-store/KeyvDirStoreAsJSON";
 
 const keyv = new Keyv({
-  store: new KeyvDirStore(".cache/kv", { ext: ".json" }),
+  store: new KeyvDirStore(".cache/kv", { suffix: ".json" }),
   ...KeyvDirStoreAsJSON,
 });
 ```
@@ -88,7 +88,7 @@ import { KeyvDirStore } from "keyv-dir-store";
 import { KeyvDirStoreAsYaml } from "keyv-dir-store/KeyvDirStoreAsYaml";
 
 const keyv = new Keyv({
-  store: new KeyvDirStore(".cache/kv", { ext: ".yaml" }),
+  store: new KeyvDirStore(".cache/kv", { suffix: ".yaml" }),
   ...KeyvDirStoreAsYaml,
 });
 ```
@@ -101,7 +101,7 @@ import { KeyvDirStore } from "keyv-dir-store";
 import * as d3 from "d3";
 
 const keyv = new Keyv({
-  store: new KeyvDirStore(".cache/kv", { ext: ".csv" }),
+  store: new KeyvDirStore(".cache/kv", { suffix: ".csv" }),
   serialize: ({ value }) => d3.csvFormat(value),
   deserialize: (str) => ({ value: d3.csvParse(str), expires: undefined }),
 });
@@ -115,7 +115,7 @@ import { KeyvDirStore } from "keyv-dir-store";
 import * as d3 from "d3";
 
 const keyv = new Keyv({
-  store: new KeyvDirStore(".cache/kv", { ext: ".tsv" }),
+  store: new KeyvDirStore(".cache/kv", { suffix: ".tsv" }),
   serialize: ({ value }) => d3.tsvFormat(value),
   deserialize: (str) => ({ value: d3.tsvParse(str), expires: undefined }),
 });
@@ -133,9 +133,8 @@ Creates a new KeyvDirStore instance.
 - `options` (object, optional):
   - `cache` (Map, optional): Custom cache Map to use
   - `filename` (function, optional): Custom filename generator function
-  - `ext` (string, optional): File extension to use (default: `.json`)
   - `prefix` (string, optional): Path prefix prepended to every key (e.g. `'data/'`)
-  - `suffix` (string, optional): Path suffix appended to every key (overrides `ext` when set)
+  - `suffix` (string, optional): Path suffix appended to every key (default: `.json`)
 
 #### Example with Custom Options
 
@@ -145,8 +144,8 @@ import { KeyvDirStore } from "keyv-dir-store";
 
 const keyv = new Keyv({
   store: new KeyvDirStore(".cache/kv", {
-    // Custom file extension
-    ext: ".data",
+    // Custom file suffix/extension
+    suffix: ".data",
 
     // Custom filename generator
     filename: (key) => `custom-prefix-${key}`,
@@ -185,6 +184,13 @@ const store = KeyvNest(
 3. The value is serialized using the specified format
 4. TTL information is stored in the file's modification time
 5. An in-memory cache is used to improve performance
+
+> **Warning**: TTL is stored using file mtime, which may be modified by other programs (backup tools, sync services, file explorers, etc.). For reliable TTL behavior, use the standard Keyv wrapper which stores expiry in the serialized value itself:
+> ```ts
+> // Keyv handles TTL internally - safe from mtime changes
+> const keyv = new Keyv({ store: new KeyvDirStore("./cache") });
+> await keyv.set("key", "value", 60000); // TTL stored in value, not mtime
+> ```
 
 ## See Also
 
