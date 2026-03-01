@@ -82,7 +82,9 @@ export class KeyvDirStore<Value extends string> implements Keyv.Store<string> {
   #path(key: string) {
     const filename = this.#filename(key);
     const ext = this.suffix || this.ext;  // suffix overrides ext when set
-    const relativePath = this.prefix + filename + ext;
+    // Sanitize filename+ext for safety; prefix can have slashes for nested paths
+    const safeFilename = sanitizeFilename(filename + ext);
+    const relativePath = this.prefix + safeFilename;
     return path.join(this.#dir, relativePath);
   }
   async get(key: string) {
