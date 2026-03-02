@@ -38,6 +38,8 @@ export class KeyvDirStore implements KeyvStoreAdapter {
   readonly prefix: string;
   /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. */
   readonly suffix: string;
+  /** Use file mtime as TTL. Defaults to false (unreliable, use Keyv wrapper instead). */
+  readonly mtimeAsTTL: boolean;
   constructor(
     /** dir to store files
      * WARN: dont share this dir with other purpose
@@ -48,18 +50,22 @@ export class KeyvDirStore implements KeyvStoreAdapter {
       filename,
       prefix,
       suffix,
+      mtimeAsTTL,
     }: {
       filename?: (key: string) => string;
       /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
       prefix?: string;
       /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. */
       suffix?: string;
+      /** Use file mtime as TTL. Defaults to false (unreliable, use Keyv wrapper instead). */
+      mtimeAsTTL?: boolean;
     } = {},
   ) {
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
     this.prefix = prefix ?? "";
     this.suffix = suffix ?? "";
+    this.mtimeAsTTL = mtimeAsTTL ?? false;
   }
   #defaultFilename(key: string) {
     // use dir as hash salt to avoid collisions
@@ -79,11 +85,13 @@ export class KeyvDirStore implements KeyvStoreAdapter {
     const filePath = this.#path(key);
     const stats = await stat(filePath).catch(() => null);
     if (!stats) return undefined;
-    // check TTL via mtime (0 = never expires)
-    const expires = +stats.mtime;
-    if (expires !== 0 && expires < Date.now()) {
-      await this.delete(key);
-      return undefined;
+    // check TTL via mtime if enabled (0 = never expires)
+    if (this.mtimeAsTTL) {
+      const expires = +stats.mtime;
+      if (expires !== 0 && expires < Date.now()) {
+        await this.delete(key);
+        return undefined;
+      }
     }
     return await readFile(filePath, "utf8").catch(() => undefined) as T | undefined;
   }
@@ -96,11 +104,13 @@ export class KeyvDirStore implements KeyvStoreAdapter {
     if (!value) return await this.delete(key);
     const filePath = this.#path(key);
     // create parent directories for nested paths (e.g. data/sub/key.json)
-    await mkdir(path.dirname(filePath), { recursive: true }).catch(() => { });
+    await mkdir(path.dirname(filePath), { recursive: true }).catch(() => {});
     await writeFile(filePath, value);
-    // set TTL via mtime (0 = never expires)
-    const expires = ttl ? Date.now() + ttl : 0;
-    await utimes(filePath, new Date(), new Date(expires)).catch(() => { });
+    // set TTL via mtime if enabled (0 = never expires)
+    if (this.mtimeAsTTL) {
+      const expires = ttl ? Date.now() + ttl : 0;
+      await utimes(filePath, new Date(), new Date(expires)).catch(() => {});
+    }
     return true;
   }
   async delete(key: string) {
