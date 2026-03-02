@@ -31,7 +31,6 @@ import sanitizeFilename from "sanitize-filename";
  */
 export class KeyvDirStore implements KeyvStoreAdapter {
   #dir: string;
-  #ready: Promise<unknown>;
   #filename: (key: string) => string;
   opts: Record<string, unknown> = {};
   namespace?: string;
@@ -57,7 +56,6 @@ export class KeyvDirStore implements KeyvStoreAdapter {
       suffix?: string;
     } = {},
   ) {
-    this.#ready = mkdir(dir, { recursive: true }).catch(() => {});
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
     this.prefix = prefix ?? "";
@@ -96,7 +94,6 @@ export class KeyvDirStore implements KeyvStoreAdapter {
       );
     }
     if (!value) return await this.delete(key);
-    await this.#ready;
     const filePath = this.#path(key);
     // create parent directories for nested paths (e.g. data/sub/key.json)
     await mkdir(path.dirname(filePath), { recursive: true }).catch(() => {});
