@@ -1,6 +1,6 @@
 {
   "name": "keyv-dir-store",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "High performance Filesystem Keyv Store, caches each key-value pair into a $key.json. and more! *.JSON, *.YAML, *.CSV is also avaliable.",
   "keywords": [
     "keyv",

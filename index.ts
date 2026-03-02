@@ -14,16 +14,15 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  *
  * learn more [README](./README.md)
  *
- * @example Basic usage
- * const kv = new Keyv<number | string | { obj: boolean }>({
- *   store: new KeyvDirStore("cache/test"),
- *   deserialize: KeyvDirStore.deserialize,
- *   serialize: KeyvDirStore.serialize,
- * });
- * await kv.set("a", 1234, -86400e3); // already expired
- * expect(await kv.get("a")).toEqual(undefined); // will delete file before get
- * await kv.set("b", 1234); // never expired
- * expect(await kv.get("b")).toEqual(1234);
+ * @example Basic usage (string values only)
+ * const store = new KeyvDirStore("cache/test");
+ * await store.set("key", "string value");
+ * const value = await store.get("key"); // "string value"
+ *
+ * @example With Keyv for object serialization
+ * const kv = new Keyv({ store: new KeyvDirStore("cache/test") });
+ * await kv.set("a", { obj: true }); // Keyv handles serialization
+ * await kv.get("a"); // { obj: true }
  *
  * @example Mirror KeyvGithub paths (for use with keyv-nest)
  * // Use same prefix/suffix as KeyvGithub, with filename: (k) => k for raw paths
@@ -36,9 +35,9 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  * // key "foo" -> ./cache/data/foo.json (local) and data/foo.json (GitHub)
  *
  */
-export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
+export class KeyvDirStore implements KeyvStoreAdapter {
   #dir: string;
-  #cache: CacheMap<Value>;
+  #cache: CacheMap<string>;
   #ready: Promise<unknown>;
   #filename: (key: string) => string;
   opts: Record<string, unknown> = {};
@@ -59,7 +58,7 @@ export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
       prefix,
       suffix,
     }: {
-      cache?: CacheMap<Value>;
+      cache?: CacheMap<string>;
       filename?: (key: string) => string;
       /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
       prefix?: string;
@@ -114,9 +113,13 @@ export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
     }
     return await readFile(path, "utf8").catch(() => undefined) as T | undefined;
   }
-  async set(key: string, value: Value, ttl?: number) {
+  async set(key: string, value: string, ttl?: number) {
+    if (typeof value !== "string") {
+      throw new TypeError(
+        "KeyvDirStore only accepts string values. Wrap with new Keyv() for object serialization."
+      );
+    }
     if (!value) return await this.delete(key);
-    // const { value, expires } = JSON.parse(stored) as DeserializedData<Value>;
     const expires = ttl ? Date.now() + ttl : 0;
     // save to memory
     this.#cache.set(key, { value, expires });
@@ -140,15 +143,6 @@ export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
   }
   async has(key: string) {
     return undefined !== (await this.get(key));
-  }
-  // Save expires into mtime, and value into file
-  /** @deprecated use KeyvDirStoreJSON */
-  static serialize({ value }: DeserializedData<any>): string {
-    return JSON.stringify(value, null, 2);
-  }
-  /** @deprecated use KeyvDirStoreJSON */
-  static deserialize(str: string): DeserializedData<any> {
-    return { value: JSON.parse(str), expires: undefined };
   }
   // IEventEmitter implementation (required by KeyvStoreAdapter)
   on(_event: string, _listener: (...args: any[]) => void): this {

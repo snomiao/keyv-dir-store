@@ -8,8 +8,7 @@ it("KeyvDirStore works", async () => {
   const kv = new Keyv<number | string | { obj: boolean }>({
     store: new KeyvDirStore(".cache/test1", { filename: (x) => x, suffix: ".json" }),
     namespace: "",
-    deserialize: KeyvDirStore.deserialize,
-    serialize: KeyvDirStore.serialize,
+    ...KeyvDirStoreAsJSON,
   });
   await kv.clear();
   await kv.set("a", 1234, -86400e3); // already expired
