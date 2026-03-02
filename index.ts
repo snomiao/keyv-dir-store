@@ -96,11 +96,11 @@ export class KeyvDirStore implements KeyvStoreAdapter {
     if (!value) return await this.delete(key);
     const filePath = this.#path(key);
     // create parent directories for nested paths (e.g. data/sub/key.json)
-    await mkdir(path.dirname(filePath), { recursive: true }).catch(() => {});
+    await mkdir(path.dirname(filePath), { recursive: true }).catch(() => { });
     await writeFile(filePath, value);
     // set TTL via mtime (0 = never expires)
     const expires = ttl ? Date.now() + ttl : 0;
-    await utimes(filePath, new Date(), new Date(expires));
+    await utimes(filePath, new Date(), new Date(expires)).catch(() => { });
     return true;
   }
   async delete(key: string) {
