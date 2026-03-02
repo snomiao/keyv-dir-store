@@ -11,11 +11,11 @@ This package provides a filesystem-based storage adapter for [Keyv](https://gith
 
 - ✅ Persistent storage using the filesystem
 - ✅ Individual files per key-value pair
-- ✅ Support customize serialize/deserialize, you can store your data into JSON, YAML, CSV, and TSV formats
+- ✅ String values only (use Keyv wrapper for object serialization)
 - ✅ TTL (Time-To-Live) support using file modification times
-- ✅ In-memory caching for improved performance
 - ✅ Full compatibility with Keyv API
-- ✅ Customizable file naming and extensions
+- ✅ Customizable file naming and prefix/suffix
+- ✅ Use with keyv-nest for memory caching layer
 
 ## Installation
 
@@ -131,7 +131,6 @@ Creates a new KeyvDirStore instance.
 
 - `directory` (string): The directory path where files will be stored
 - `options` (object, optional):
-  - `cache` (Map, optional): Custom cache Map to use
   - `filename` (function, optional): Custom filename generator function
   - `prefix` (string, optional): Path prefix prepended to every key (e.g. `'data/'`). Defaults to `''`
   - `suffix` (string, optional): Path suffix appended to every key (e.g. `'.json'`). Defaults to `''`
@@ -181,9 +180,14 @@ const store = KeyvNest(
 
 1. Each key-value pair is stored in a separate file on disk
 2. The key is used to generate a filename (with sanitization)
-3. The value is serialized using the specified format
+3. Values must be strings (use Keyv wrapper for object serialization)
 4. TTL information is stored in the file's modification time
-5. An in-memory cache is used to improve performance
+
+> **Note**: This store has no in-memory cache. Use [keyv-nest](https://github.com/snomiao/keyv-nest) to add a memory cache layer:
+> ```ts
+> import KeyvNest from "keyv-nest";
+> const store = KeyvNest(new Map(), new KeyvDirStore("./cache"));
+> ```
 
 > **Warning**: TTL is stored using file mtime, which may be modified by other programs (backup tools, sync services, file explorers, etc.). For reliable TTL behavior, use the standard Keyv wrapper which stores expiry in the serialized value itself:
 > ```ts

@@ -1,12 +1,13 @@
-import type { DeserializedData, KeyvStoreAdapter } from "keyv";
+import type { KeyvStoreAdapter } from "keyv";
 import md5 from "md5";
 import { mkdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import path from "path";
 import sanitizeFilename from "sanitize-filename";
-
-type CacheMap<Value> = Map<string, DeserializedData<Value>>;
 /**
  * KeyvDirStore is a Keyv.Store<string> implementation that stores data in files.
+ *
+ * **Note**: This store has no in-memory cache. Use keyv-nest to add a memory cache layer:
+ * `KeyvNest(new Map(), new KeyvDirStore(...))`
  *
  * **Warning**: TTL is stored in file mtime, which may be modified by other programs
  * (backup tools, sync services, etc.). For reliable TTL, wrap this store with Keyv:
@@ -24,20 +25,12 @@ type CacheMap<Value> = Map<string, DeserializedData<Value>>;
  * await kv.set("a", { obj: true }); // Keyv handles serialization
  * await kv.get("a"); // { obj: true }
  *
- * @example Mirror KeyvGithub paths (for use with keyv-nest)
- * // Use same prefix/suffix as KeyvGithub, with filename: (k) => k for raw paths
- * const dirStore = new KeyvDirStore("./cache", {
- *   prefix: "data/",
- *   suffix: ".json",
- *   filename: (k) => k,  // use key as-is, no hashing
- * });
- * // Now dirStore uses same paths as KeyvGithub:
- * // key "foo" -> ./cache/data/foo.json (local) and data/foo.json (GitHub)
+ * @example With memory cache using keyv-nest
+ * const store = KeyvNest(new Map(), new KeyvDirStore("cache/test"));
  *
  */
 export class KeyvDirStore implements KeyvStoreAdapter {
   #dir: string;
-  #cache: CacheMap<string>;
   #ready: Promise<unknown>;
   #filename: (key: string) => string;
   opts: Record<string, unknown> = {};
@@ -47,18 +40,16 @@ export class KeyvDirStore implements KeyvStoreAdapter {
   /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. */
   readonly suffix: string;
   constructor(
-    /** dir to cache store
+    /** dir to store files
      * WARN: dont share this dir with other purpose
-     *       it will be rm -f when keyv.clear() is called
+     *       it will be rm -rf when keyv.clear() is called
      */
     dir: string,
     {
-      cache = new Map(),
       filename,
       prefix,
       suffix,
     }: {
-      cache?: CacheMap<string>;
       filename?: (key: string) => string;
       /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
       prefix?: string;
@@ -67,7 +58,6 @@ export class KeyvDirStore implements KeyvStoreAdapter {
     } = {},
   ) {
     this.#ready = mkdir(dir, { recursive: true }).catch(() => {});
-    this.#cache = cache;
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
     this.prefix = prefix ?? "";
@@ -87,31 +77,17 @@ export class KeyvDirStore implements KeyvStoreAdapter {
     const relativePath = this.prefix + safeFilename;
     return path.join(this.#dir, relativePath);
   }
-  async get<T = Value>(key: string): Promise<T | undefined> {
-    // read memory
-    const memCached = this.#cache.get(key);
-    if (memCached) {
-      // console.log("memory cache hit but expired", key, cached.expires, Date.now());
-      if (memCached.expires && memCached.expires < Date.now()) {
-        await this.delete(key);
-      } else {
-        return memCached.value as T;
-      }
-    }
-    // read file cache
-    const path = this.#path(key);
-    const stats = await stat(path).catch(() => null);
-    if (!stats) return undefined; // stat not found
+  async get<T = string>(key: string): Promise<T | undefined> {
+    const filePath = this.#path(key);
+    const stats = await stat(filePath).catch(() => null);
+    if (!stats) return undefined;
+    // check TTL via mtime (0 = never expires)
     const expires = +stats.mtime;
-    if (expires !== 0) {
-      const expired = +stats.mtime < +Date.now();
-      if (expired) {
-        //   console.log("file cache hit expired", key, expires, Date.now(), expired);
-        await this.delete(key);
-        return undefined;
-      }
+    if (expires !== 0 && expires < Date.now()) {
+      await this.delete(key);
+      return undefined;
     }
-    return await readFile(path, "utf8").catch(() => undefined) as T | undefined;
+    return await readFile(filePath, "utf8").catch(() => undefined) as T | undefined;
   }
   async set(key: string, value: string, ttl?: number) {
     if (typeof value !== "string") {
@@ -120,21 +96,17 @@ export class KeyvDirStore implements KeyvStoreAdapter {
       );
     }
     if (!value) return await this.delete(key);
-    const expires = ttl ? Date.now() + ttl : 0;
-    // save to memory
-    this.#cache.set(key, { value, expires });
-    // save to file
     await this.#ready;
     const filePath = this.#path(key);
     // create parent directories for nested paths (e.g. data/sub/key.json)
     await mkdir(path.dirname(filePath), { recursive: true }).catch(() => {});
-    await writeFile(filePath, value); // create a expired file
-    await utimes(filePath, new Date(), new Date(expires ?? 0)); // set expires time as mtime (0 as never expired)
+    await writeFile(filePath, value);
+    // set TTL via mtime (0 = never expires)
+    const expires = ttl ? Date.now() + ttl : 0;
+    await utimes(filePath, new Date(), new Date(expires));
     return true;
   }
   async delete(key: string) {
-    // delete memory
-    this.#cache.delete(key);
     await rm(this.#path(key), { force: true });
     return true;
   }
