@@ -6,7 +6,7 @@ import { KeyvDirStoreAsJSON } from "./KeyvDirStoreAsJSON";
 it("KeyvDirStore works", async () => {
   // store test
   const kv = new Keyv<number | string | { obj: boolean }>({
-    store: new KeyvDirStore(".cache/test1", { filename: (x) => x }),
+    store: new KeyvDirStore(".cache/test1", { filename: (x) => x, suffix: ".json" }),
     namespace: "",
     deserialize: KeyvDirStore.deserialize,
     serialize: KeyvDirStore.serialize,
@@ -30,7 +30,7 @@ it("KeyvDirStore works", async () => {
 
   // new instance with no cache Obj, to test file cache
   const kv2 = new Keyv<number | string | { obj: boolean }>({
-    store: new KeyvDirStore(".cache/test1", { filename: (x) => x }),
+    store: new KeyvDirStore(".cache/test1", { filename: (x) => x, suffix: ".json" }),
     namespace: "",
     ...KeyvDirStoreAsJSON,
   });

@@ -133,8 +133,8 @@ Creates a new KeyvDirStore instance.
 - `options` (object, optional):
   - `cache` (Map, optional): Custom cache Map to use
   - `filename` (function, optional): Custom filename generator function
-  - `prefix` (string, optional): Path prefix prepended to every key (e.g. `'data/'`)
-  - `suffix` (string, optional): Path suffix appended to every key (default: `.json`)
+  - `prefix` (string, optional): Path prefix prepended to every key (e.g. `'data/'`). Defaults to `''`
+  - `suffix` (string, optional): Path suffix appended to every key (e.g. `'.json'`). Defaults to `''`
 
 #### Example with Custom Options
 

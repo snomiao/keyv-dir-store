@@ -45,7 +45,7 @@ export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
   namespace?: string;
   /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
   readonly prefix: string;
-  /** Path suffix appended to every key (e.g. '.json'). Defaults to '.json'. */
+  /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. */
   readonly suffix: string;
   constructor(
     /** dir to cache store
@@ -61,9 +61,9 @@ export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
     }: {
       cache?: CacheMap<Value>;
       filename?: (key: string) => string;
-      /** Path prefix prepended to every key (e.g. 'data/'). Use with filename: (k) => k for raw paths. */
+      /** Path prefix prepended to every key (e.g. 'data/'). Defaults to ''. */
       prefix?: string;
-      /** Path suffix appended to every key (e.g. '.json'). Defaults to '.json'. Use with filename: (k) => k for raw paths. */
+      /** Path suffix appended to every key (e.g. '.json'). Defaults to ''. */
       suffix?: string;
     } = {},
   ) {
@@ -72,7 +72,7 @@ export class KeyvDirStore<Value extends string> implements KeyvStoreAdapter {
     this.#dir = dir;
     this.#filename = filename ?? this.#defaultFilename;
     this.prefix = prefix ?? "";
-    this.suffix = suffix ?? ".json";
+    this.suffix = suffix ?? "";
   }
   #defaultFilename(key: string) {
     // use dir as hash salt to avoid collisions
